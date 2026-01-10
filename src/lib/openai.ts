@@ -1,11 +1,6 @@
 import { SYSTEM_PROMPT } from "./prompt";
 
-export async function askOpenAI(error: string, ctx: any) {
-  // Safe defaults if context is missing
-  const category = ctx?.category || "Unknown Error";
-  const concepts = ctx?.concepts?.join(", ") || "General debugging";
-  const docs = ctx?.docs?.join(", ") || "StackOverflow";
-
+export async function askOpenAI(error: string) {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -13,21 +8,15 @@ export async function askOpenAI(error: string, ctx: any) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini", // Using mini for cost/speed
+      model: "gpt-4o", // Upgraded to standard model for better reasoning
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `
-Error log:
-${error}
-
-Detected category: ${category}
-Related concepts: ${concepts}
-Suggested docs: ${docs}
-`
+          content: `Here is my error log:\n\n${error}`
         }
-      ]
+      ],
+      temperature: 0.7 
     })
   });
 
