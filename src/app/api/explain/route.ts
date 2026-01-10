@@ -6,27 +6,26 @@ export async function POST(req: Request) {
   try {
     const { errorLog } = await req.json();
 
-    // 1. INPUT GUARD: Check if it's junk/spam/not an error
+    // 1. INPUT GUARD: Check if it's junk
     if (!errorLog || !isLikelyErrorLog(errorLog)) {
       return Response.json(
         { 
-          content: "That doesn't look like an error log. Please paste a real stack trace or error message so I can help you learn!" 
+          content: "That doesn't look like an error log. Please paste a real stack trace (at least 10 chars) so I can help!" 
         }, 
         { status: 400 }
       );
     }
 
-    // 2. CLASSIFY: Get metadata to help the AI (optional context)
+    // 2. CLASSIFY: Get metadata
     const ctx = classifyError(errorLog);
 
-    // 3. AI CALL: Send to OpenAI with the strict prompt
-    let reply = await askOpenAI(errorLog, JSON.stringify(ctx));
+    // 3. AI CALL: Pass 'ctx' as an object, NOT stringified
+    let reply = await askOpenAI(errorLog, ctx);
 
-    // 4. OUTPUT GUARD: Double check the AI didn't hallucinate unsafe code
+    // 4. OUTPUT GUARD
     if (!isSafe(reply)) {
-      // If the AI tried to give code despite our prompt, we catch it here.
       return Response.json(
-        { content: "I analyzed the error, but I cannot provide the specific code fix. Try reviewing the logic around the error line yourself!" },
+        { content: "I analyzed the error, but I cannot provide a direct code fix. Please review the logic around the error line yourself!" },
         { status: 200 }
       );
     }

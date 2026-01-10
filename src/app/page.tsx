@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Terminal, Loader2, Sparkles } from "lucide-react";
+import { Send, Terminal, Loader2, Sparkles, Trash2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import clsx from "clsx";
 
@@ -17,6 +17,30 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // 1. Load history on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("error-explainer-history");
+    if (saved) {
+      try {
+        setMessages(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load history", e);
+      }
+    }
+  }, []);
+
+  // 2. Save history on change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem("error-explainer-history", JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const clearHistory = () => {
+    setMessages([]);
+    localStorage.removeItem("error-explainer-history");
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -30,7 +54,9 @@ export default function Home() {
     if (!input.trim() || loading) return;
 
     const userMessage = input.trim();
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    const newHistory = [...messages, { role: "user", content: userMessage } as Message];
+    
+    setMessages(newHistory);
     setInput("");
     setLoading(true);
 
@@ -45,7 +71,7 @@ export default function Home() {
       
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.content || data.error || data || "Something went wrong." },
+        { role: "assistant", content: data.content || data.error || "Something went wrong." },
       ]);
     } catch (err) {
       setMessages((prev) => [
@@ -59,7 +85,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto px-4 md:px-0">
-      {/* Header */}
+      {/* Header with Clear Button */}
       <header className="flex items-center justify-between py-6 border-b border-white/5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-indigo-500/10 rounded-lg">
@@ -67,8 +93,15 @@ export default function Home() {
           </div>
           <span className="font-bold text-lg tracking-tight text-zinc-100">ErrorExplainer</span>
         </div>
-        <div className="text-xs font-medium px-3 py-1 bg-white/5 rounded-full text-zinc-400 border border-white/5">
-          Beta
+        <div className="flex items-center gap-4">
+            {messages.length > 0 && (
+                <button onClick={clearHistory} className="text-zinc-500 hover:text-red-400 transition-colors" title="Clear History">
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            )}
+            <div className="text-xs font-medium px-3 py-1 bg-white/5 rounded-full text-zinc-400 border border-white/5">
+            Beta
+            </div>
         </div>
       </header>
 

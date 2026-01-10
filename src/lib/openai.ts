@@ -1,6 +1,11 @@
 import { SYSTEM_PROMPT } from "./prompt";
 
 export async function askOpenAI(error: string, ctx: any) {
+  // Safe defaults if context is missing
+  const category = ctx?.category || "Unknown Error";
+  const concepts = ctx?.concepts?.join(", ") || "General debugging";
+  const docs = ctx?.docs?.join(", ") || "StackOverflow";
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -8,20 +13,18 @@ export async function askOpenAI(error: string, ctx: any) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model: "gpt-4o-mini", // Using mini for cost/speed
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
           content: `
-Language: Java
-
 Error log:
 ${error}
 
-Detected category: ${ctx.category}
-Related concepts: ${ctx.concepts.join(", ")}
-Suggested docs: ${ctx.docs.join(", ")}
+Detected category: ${category}
+Related concepts: ${concepts}
+Suggested docs: ${docs}
 `
         }
       ]

@@ -1,64 +1,57 @@
 export function isLikelyErrorLog(text: string): boolean {
-  // 1. If it's too short, it's not a real log.
-  if (text.length < 15) return false;
+  // 1. Allow short errors like "Killed" or "Segfault"
+  if (text.length < 5) return false;
 
-  // 2. Check for common error signatures
+  // 2. Expanded error signatures
   const errorPatterns = [
-    /error/i,                    // Generic "Error"
-    /exception/i,                // Java/JS/Python "Exception"
-    /panic:/i,                   // Go/Rust panics
-    /at\s+.*\s+\(.*\:\d+\:\d+\)/, // JS/Java Stack trace "at func (file:10:5)"
-    /\w+\.\w+\(.*\:\d+\)/,       // Python/Ruby trace "file.py:10"
-    /\[.*\]\s+.*failed/,         // Logs like "[Error] Task failed"
-    /Caused by:/i,               // Java nested exceptions
-    /line\s+\d+/i,               // "Line 50" references
-    /undefined/i,                // JS undefined errors
-    /null pointer/i              // NullPointer
+    /error/i,                    // Generic
+    /exception/i,                // Java/JS/Python
+    /panic:/i,                   // Go/Rust
+    /at\s+.*\s+\(.*\:\d+\:\d+\)/,// JS/Java Stack trace
+    /\w+\.\w+\(.*\:\d+\)/,       // Python/Ruby trace
+    /\[.*\]\s+.*failed/,         // System logs
+    /Caused by:/i,               // Java
+    /line\s+\d+/i,               // Line references
+    /undefined/i,                // JS
+    /null pointer/i,             // NullPointer
+    /segmentation fault/i,       // C/C++
+    /killed/i,                   // Process kill
+    /traceback/i                 // Python
   ];
 
-  // Must match at least one error pattern
   return errorPatterns.some(pattern => pattern.test(text));
 }
 
 export function classifyError(error: string) {
-  if (error.includes("NullPointerException")) {
+  // Simple keyword matching for context injection
+  if (error.match(/NullPointer|undefined|NoneType/i)) {
     return {
-      category: "Null handling",
-      concepts: [
-        "Object initialization",
-        "Optional",
-        "Dependency injection lifecycle"
-      ],
-      docs: [
-        "https://docs.oracle.com/javase/8/docs/api/java/lang/NullPointerException.html",
-        "https://www.baeldung.com/java-nullpointerexception"
-      ]
+      category: "Null/Undefined Reference",
+      concepts: ["Object lifecycle", "Existence checks", "Optional Chaining"],
+      docs: ["https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined"]
     };
   }
 
-  if (error.includes("IndexOutOfBoundsException")) {
+  if (error.match(/IndexOutOfBounds|undefined index|key error/i)) {
     return {
-      category: "Collection bounds",
-      concepts: [
-        "Array vs List indexing",
-        "Zero-based indexing"
-      ],
-      docs: [
-        "https://docs.oracle.com/javase/8/docs/api/java/lang/IndexOutOfBoundsException.html"
-      ]
+      category: "Out of Bounds Access",
+      concepts: ["Array indexing", "Map keys", "Boundary conditions"],
+      docs: []
     };
   }
 
-  // Default fallback
+  if (error.match(/SyntaxError|unexpected token|indentation/i)) {
+    return {
+      category: "Syntax / Parsing Error",
+      concepts: ["Linter setup", "Scope closures", "Typos"],
+      docs: []
+    };
+  }
+
+  // Generic fallback that works for ANY language
   return {
-    category: "General Runtime Error",
-    concepts: [
-      "Stack traces",
-      "Execution flow",
-      "Debugging strategies"
-    ],
-    docs: [
-      "https://stackoverflow.com/"
-    ]
+    category: "Runtime Error",
+    concepts: ["Stack trace analysis", "State verification", "Debugging logic"],
+    docs: []
   };
 }
